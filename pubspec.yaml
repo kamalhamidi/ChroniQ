@@ -17,6 +17,7 @@ dependencies:
   flutter_animate: ^4.3.0
   intl: ^0.19.0
   uuid: ^4.3.3
+  video_player: ^2.5.1
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +26,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/bg_video.mp4

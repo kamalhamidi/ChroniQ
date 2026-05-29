@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 import '../theme/app_theme.dart';
 import '../services/storage_service.dart';
 import '../models/rank.dart';
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen>
   late Animation<double> _breatheAnimation;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  late VideoPlayerController _videoController;
 
   String _name = '';
   String _flag = '';
@@ -53,6 +55,14 @@ class _HomeScreenState extends State<HomeScreen>
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
 
     _loadProfile();
+
+    _videoController = VideoPlayerController.asset('assets/bg_video.mp4')
+      ..initialize().then((_) {
+        _videoController.setLooping(true);
+        _videoController.setVolume(0);
+        _videoController.play();
+        if (mounted) setState(() {});
+      });
   }
 
   Future<void> _loadProfile() async {
@@ -88,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _breatheController.dispose();
     _fadeController.dispose();
+    _videoController.dispose();
     _countdownTimer?.cancel();
     super.dispose();
   }
@@ -102,162 +113,185 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.black,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-
-                // ── Top: Avatar + Rank ──
-                Row(
-                  children: [
-                    // Avatar circle
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.cardBg,
-                        border: Border.all(
-                          color: AppTheme.purple.withValues(alpha: 0.4),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(_flag, style: const TextStyle(fontSize: 24)),
-                      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _videoController.value.isInitialized
+                ? FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: _videoController.value.size.width,
+                      height: _videoController.value.size.height,
+                      child: VideoPlayer(_videoController),
                     ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  )
+                : Container(color: AppTheme.black),
+          ),
+          // subtle overlay to keep text readable
+          Positioned.fill(
+            child: Container(color: Colors.black.withOpacity(0.35)),
+          ),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+
+                    // ── Top: Avatar + Rank ──
+                    Row(
                       children: [
-                        Text(
-                          _name,
-                          style: AppTheme.headingSmall.copyWith(fontSize: 16),
-                        ),
-                        Text(
-                          _rank.displayName,
-                          style: AppTheme.bodySmall.copyWith(
-                            color: _rank.color,
-                            fontWeight: FontWeight.w600,
+                        // Avatar circle
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppTheme.cardBg,
+                            border: Border.all(
+                              color: AppTheme.purple.withValues(alpha: 0.4),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _flag,
+                              style: const TextStyle(fontSize: 24),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _name,
+                              style: AppTheme.headingSmall.copyWith(fontSize: 16),
+                            ),
+                            Text(
+                              _rank.displayName,
+                              style: AppTheme.bodySmall.copyWith(
+                                color: _rank.color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        RankBadge(rank: _rank, size: 44),
                       ],
                     ),
+
                     const Spacer(),
-                    RankBadge(rank: _rank, size: 44),
+
+                    // ── Center: CHRONO Logo ──
+                    AnimatedBuilder(
+                      animation: _breatheAnimation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: _breatheAnimation.value,
+                          child: child,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.purple.withValues(alpha: 0.4),
+                              blurRadius: 40,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'CHRONIQ',
+                          style: AppTheme.headingXL.copyWith(
+                            letterSpacing: 10,
+                            shadows: [
+                              Shadow(
+                                color: AppTheme.purple.withValues(alpha: 0.7),
+                                blurRadius: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    Text(
+                      'TIMING PRECISION',
+                      style: AppTheme.labelStyle.copyWith(
+                        color: AppTheme.dimWhite.withValues(alpha: 0.5),
+                        letterSpacing: 4,
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // ── Mode Cards ──
+                    _buildModeCard(
+                      title: 'PRECISION',
+                      subtitle: 'Train your inner clock',
+                      color: AppTheme.purple,
+                      onTap: () => _navigateTo(const PrecisionModeScreen()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildModeCard(
+                      title: 'BATTLE',
+                      subtitle: 'Pass & destroy friends',
+                      color: AppTheme.cyan,
+                      onTap: () => _navigateTo(const BattleModeScreen()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildModeCard(
+                      title: 'ONLINE',
+                      subtitle: 'Match with players worldwide',
+                      color: AppTheme.green,
+                      onTap: () => _navigateTo(const OnlineModeScreen()),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildModeCard(
+                      title: 'DAILY CHALLENGE',
+                      subtitle: _dailyPlayed
+                          ? 'Next in $_dailyCountdown'
+                          : 'One shot. One chance.',
+                      color: AppTheme.amber,
+                      onTap: () => _navigateTo(const DailyChallengeScreen()),
+                      disabled: _dailyPlayed,
+                    ),
+
+                    const Spacer(),
+
+                    // ── Bottom: Profile ──
+                    GestureDetector(
+                      onTap: () => _navigateTo(const ProfileScreen()),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.cardBg,
+                          border: Border.all(
+                            color: AppTheme.dimWhite.withValues(alpha: 0.15),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline,
+                          color: AppTheme.dimWhite,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
-
-                const Spacer(),
-
-                // ── Center: CHRONO Logo ──
-                AnimatedBuilder(
-                  animation: _breatheAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _breatheAnimation.value,
-                      child: child,
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.purple.withValues(alpha: 0.4),
-                          blurRadius: 40,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'CHRONO',
-                      style: AppTheme.headingXL.copyWith(
-                        letterSpacing: 10,
-                        shadows: [
-                          Shadow(
-                            color: AppTheme.purple.withValues(alpha: 0.7),
-                            blurRadius: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-                Text(
-                  'TIMING PRECISION',
-                  style: AppTheme.labelStyle.copyWith(
-                    color: AppTheme.dimWhite.withValues(alpha: 0.5),
-                    letterSpacing: 4,
-                  ),
-                ),
-
-                const Spacer(),
-
-                // ── Mode Cards ──
-                _buildModeCard(
-                  title: 'PRECISION',
-                  subtitle: 'Train your inner clock',
-                  color: AppTheme.purple,
-                  onTap: () => _navigateTo(const PrecisionModeScreen()),
-                ),
-                const SizedBox(height: 12),
-                _buildModeCard(
-                  title: 'BATTLE',
-                  subtitle: 'Pass & destroy friends',
-                  color: AppTheme.cyan,
-                  onTap: () => _navigateTo(const BattleModeScreen()),
-                ),
-                const SizedBox(height: 12),
-                _buildModeCard(
-                  title: 'ONLINE',
-                  subtitle: 'Match with players worldwide',
-                  color: AppTheme.green,
-                  onTap: () => _navigateTo(const OnlineModeScreen()),
-                ),
-                const SizedBox(height: 12),
-                _buildModeCard(
-                  title: 'DAILY CHALLENGE',
-                  subtitle: _dailyPlayed
-                      ? 'Next in $_dailyCountdown'
-                      : 'One shot. One chance.',
-                  color: AppTheme.amber,
-                  onTap: () => _navigateTo(const DailyChallengeScreen()),
-                  disabled: _dailyPlayed,
-                ),
-
-                const Spacer(),
-
-                // ── Bottom: Profile ──
-                GestureDetector(
-                  onTap: () => _navigateTo(const ProfileScreen()),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.cardBg,
-                      border: Border.all(
-                        color: AppTheme.dimWhite.withValues(alpha: 0.15),
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.person_outline,
-                      color: AppTheme.dimWhite,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
