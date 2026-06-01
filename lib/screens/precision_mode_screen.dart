@@ -11,6 +11,7 @@ import '../widgets/arc_timer.dart';
 import 'reveal_screen.dart';
 
 enum _PrecisionPhase { showTarget, countdown, timing, done }
+enum _PrecisionMode { normal, classic }
 
 class PrecisionModeScreen extends StatefulWidget {
   const PrecisionModeScreen({super.key});
@@ -22,6 +23,7 @@ class PrecisionModeScreen extends StatefulWidget {
 class _PrecisionModeScreenState extends State<PrecisionModeScreen>
     with TickerProviderStateMixin {
   _PrecisionPhase _phase = _PrecisionPhase.showTarget;
+  _PrecisionMode _mode = _PrecisionMode.normal;
   late double _targetTime;
   final Stopwatch _stopwatch = Stopwatch();
   final AudioService _audio = AudioService.getInstance();
@@ -245,6 +247,28 @@ class _PrecisionModeScreenState extends State<PrecisionModeScreen>
                     ),
                   ),
                   const SizedBox(height: 40),
+                  Text(
+                    'MODE',
+                    style: AppTheme.labelStyle.copyWith(letterSpacing: 4),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildModeOption(
+                        label: 'NORMAL',
+                        isSelected: _mode == _PrecisionMode.normal,
+                        onTap: () => setState(() => _mode = _PrecisionMode.normal),
+                      ),
+                      const SizedBox(width: 12),
+                      _buildModeOption(
+                        label: 'CLASSIC',
+                        isSelected: _mode == _PrecisionMode.classic,
+                        onTap: () => setState(() => _mode = _PrecisionMode.classic),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
                   GestureDetector(
                     onTap: _startCountdown,
                     child: Container(
@@ -265,20 +289,22 @@ class _PrecisionModeScreenState extends State<PrecisionModeScreen>
                   CountdownWidget(onComplete: _startTiming),
 
                 if (_phase == _PrecisionPhase.timing) ...[
-                  ArcTimer(
-                    elapsed: _elapsedSeconds,
-                    target: _targetTime,
-                    isRunning: _phase == _PrecisionPhase.timing,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'TARGET ${PrecisionCalculator.formatTime(_targetTime)}s',
-                    style: AppTheme.bodyLarge.copyWith(
-                      color: AppTheme.dimWhite.withValues(alpha: 0.4),
-                      fontSize: 16,
+                  if (_mode == _PrecisionMode.normal) ...[
+                    ArcTimer(
+                      elapsed: _elapsedSeconds,
+                      target: _targetTime,
+                      isRunning: _phase == _PrecisionPhase.timing,
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    Text(
+                      'TARGET ${PrecisionCalculator.formatTime(_targetTime)}s',
+                      style: AppTheme.bodyLarge.copyWith(
+                        color: AppTheme.dimWhite.withValues(alpha: 0.4),
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   // Tap button
                   GestureDetector(
                     onTap: _onTap,
@@ -328,19 +354,63 @@ class _PrecisionModeScreenState extends State<PrecisionModeScreen>
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'FEEL THE MOMENT',
-                    style: AppTheme.labelStyle.copyWith(
-                      color: AppTheme.dimWhite.withValues(alpha: 0.3),
-                      letterSpacing: 4,
+                  if (_mode == _PrecisionMode.normal)
+                    Text(
+                      'FEEL THE MOMENT',
+                      style: AppTheme.labelStyle.copyWith(
+                        color: AppTheme.dimWhite.withValues(alpha: 0.3),
+                        letterSpacing: 4,
+                      ),
                     ),
-                  ),
                 ],
 
                 const Spacer(),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeOption({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final color = label == 'CLASSIC' ? AppTheme.cyan : AppTheme.purple;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? color.withValues(alpha: 0.18)
+              : AppTheme.cardBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? color
+                : AppTheme.dimWhite.withValues(alpha: 0.2),
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: AppTheme.headingSmall.copyWith(
+            color: isSelected ? color : AppTheme.dimWhite,
+            letterSpacing: 2,
+          ),
         ),
       ),
     );
