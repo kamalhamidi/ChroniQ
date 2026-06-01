@@ -1,0 +1,42 @@
+Here’s a concise, complete snapshot of the game as it exists in the codebase:
+
+Game overview
+
+Title: ChroniQ (display name updated in iOS/Android).
+Genre: Precision timing game — tap to stop a timer as close as possible to a hidden target time.
+Core loop: Target time is generated, player starts a countdown, then taps to stop. Result is graded by precision tier, with feedback effects and sound.
+Description string: “CHRONO — Premium Timing Precision Game” in pubspec.yaml.
+Game modes
+
+Precision (Solo): Generates a random target (1.00–9.99s excluding .00/.50). Player taps to match it; results shown on reveal screen. Uses heartbeat audio that intensifies near the target. See precision_mode_screen.dart and PrecisionCalculator.
+Battle (Local pass‑and‑play): 2–4 players enter names, each takes a turn. Results are sorted by precision and shown in a reveal leaderboard. See battle_mode_screen.dart.
+Online (Simulated matchmaking): Fake ping/search, bot lobby chat, countdown, then a timed round against bots. Bot reactions and rage‑quit behavior are simulated. See online_mode_screen.dart and BotService.
+Daily Challenge: One attempt per day with a deterministic target based on date. Produces a fake global leaderboard and shows user ranking. See daily_challenge_screen.dart and DailySeed.
+Scoring & ranks
+
+Precision tiers: PrecisionTier thresholds from “GODLIKE” to “BAD” based on absolute difference in seconds; includes color + emoji per tier. See PrecisionTier in game_result.dart.
+Rank system: Rank based on average precision with progression (Bronze → Chrono God). See Rank in rank.dart.
+Streaks & best precision: Stored locally; streak increments when abs difference ≤ 0.150s. See StorageService in storage_service.dart.
+Reveal/feedback
+
+Reveal screen: Animated number roll, tier reveal, early/late difference text, optional leaderboard for battle/online. See reveal_screen.dart.
+Audio & haptics: Synthetic tone generation for countdown, results, and heartbeat; haptic feedback on tap. See AudioService in audio_service.dart.
+Progression & profile
+
+Profile screen: Shows stats (total games, average precision, best, streak), rank badge, progress bar, and history chart. See profile_screen.dart.
+Abilities: Unlocks (zen_mode, slow_heartbeat, ghost_tap, pressure) based on rank, tracked in StorageService.
+Bots & matchmaking
+
+Bot personalities: tooFast, slowBro, zenTimer, chaotic, clutch, rageQuitter with different timing offsets; includes fake chat messages. See BotPlayer in bot_player.dart and BotService in bot_service.dart.
+UI/visuals
+
+Neon cyber theme with custom components (glow buttons, badges, progress bars, timeline replay).
+Home screen: Animated logo, mode cards, profile entry.
+Video background: Uses bg_video.mp4 as a background in the menu (Home screen). See pubspec.yaml and home_screen.dart.
+Local data
+
+Uses SharedPreferences for player profile, stats, ranks, daily results, unlocked abilities. See StorageService in storage_service.dart.
+Dependencies (key ones)
+
+audioplayers, shared_preferences, fl_chart, video_player, flutter_animate, intl. See pubspec.yaml.
+If you want this packaged as a proper README with screenshots, feature list, and setup steps, say the word and I’ll generate it.
