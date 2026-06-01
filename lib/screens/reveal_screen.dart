@@ -2,11 +2,16 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../theme/app_theme.dart';
 import '../models/game_result.dart';
 import '../services/storage_service.dart';
 import '../services/audio_service.dart';
 import '../widgets/precision_tier_card.dart';
+import '../widgets/ripple_burst.dart';
+import '../widgets/particle_explosion.dart';
+import '../widgets/glitch_overlay.dart';
+import '../widgets/timing_dial.dart';
 import '../widgets/timeline_replay.dart';
 import '../widgets/glow_button.dart';
 
@@ -44,23 +49,56 @@ class _RevealScreenState extends State<RevealScreen>
   late Animation<Offset> _shakeAnimation;
   late AnimationController _flashController;
   late Animation<double> _flashAnimation;
+  late AnimationController _godlikeScaleController;
+  late Animation<double> _godlikeScaleAnimation;
+  late AnimationController _rgbSplitController;
+  late Animation<double> _rgbSplitAnimation;
+
+  bool get _isGodlike => widget.result.tier == PrecisionTier.godlike;
+  bool get _isBad => widget.result.tier == PrecisionTier.bad;
 
   @override
   void initState() {
     super.initState();
 
     _shakeController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     _shakeAnimation = TweenSequence<Offset>([
-      TweenSequenceItem(tween: Tween(begin: Offset.zero, end: const Offset(-8, 0)), weight: 10),
-      TweenSequenceItem(tween: Tween(begin: const Offset(-8, 0), end: const Offset(8, 0)), weight: 20),
-      TweenSequenceItem(tween: Tween(begin: const Offset(8, 0), end: const Offset(-6, 0)), weight: 20),
-      TweenSequenceItem(tween: Tween(begin: const Offset(-6, 0), end: const Offset(6, 0)), weight: 20),
-      TweenSequenceItem(tween: Tween(begin: const Offset(6, 0), end: const Offset(-3, 0)), weight: 15),
-      TweenSequenceItem(tween: Tween(begin: const Offset(-3, 0), end: Offset.zero), weight: 15),
-    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
+      TweenSequenceItem(
+        tween: Tween(begin: Offset.zero, end: const Offset(-12, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(-12, 0), end: const Offset(12, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(12, 0), end: const Offset(-10, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(-10, 0), end: const Offset(10, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(10, 0), end: const Offset(-8, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(-8, 0), end: const Offset(8, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(8, 0), end: const Offset(-5, 0)),
+        weight: 12,
+      ),
+      TweenSequenceItem(
+        tween: Tween(begin: const Offset(-5, 0), end: Offset.zero),
+        weight: 16,
+      ),
+    ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeOut));
 
     _flashController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -69,6 +107,35 @@ class _RevealScreenState extends State<RevealScreen>
     _flashAnimation = Tween<double>(begin: 0.0, end: 0.3).animate(
       CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
     );
+
+    _godlikeScaleController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _godlikeScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.5, end: 1.05), weight: 70),
+      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 30),
+    ]).animate(CurvedAnimation(parent: _godlikeScaleController, curve: Curves.elasticOut));
+
+    _rgbSplitController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _rgbSplitAnimation = Tween<double>(begin: 3, end: 0).animate(
+      CurvedAnimation(parent: _rgbSplitController, curve: Curves.easeOut),
+    );
+
+    if (_isBad) {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _shakeController.forward(from: 0);
+      });
+    }
+
+    if (_isGodlike) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _godlikeScaleController.forward(from: 0);
+      });
+    }
 
     _startRevealSequence();
   }
@@ -93,16 +160,12 @@ class _RevealScreenState extends State<RevealScreen>
 
     // Play sound based on result
     final audio = AudioService.getInstance();
-    if (widget.result.tier == PrecisionTier.bad) {
-      audio.playBadResult();
-      _shakeController.forward();
+    audio.playTierSound(widget.result.tier);
+    if (_isBad) {
       HapticFeedback.heavyImpact();
-    } else {
-      audio.playGoodResult();
-      if (widget.result.tier == PrecisionTier.godlike ||
-          widget.result.tier == PrecisionTier.perfect) {
-        _flashController.forward().then((_) => _flashController.reverse());
-      }
+      _rgbSplitController.forward(from: 0);
+    } else if (_isGodlike || widget.result.tier == PrecisionTier.perfect) {
+      _flashController.forward().then((_) => _flashController.reverse());
     }
 
     // Show difference
@@ -163,6 +226,8 @@ class _RevealScreenState extends State<RevealScreen>
     _rollTimer?.cancel();
     _shakeController.dispose();
     _flashController.dispose();
+    _godlikeScaleController.dispose();
+    _rgbSplitController.dispose();
     super.dispose();
   }
 
@@ -172,6 +237,23 @@ class _RevealScreenState extends State<RevealScreen>
       backgroundColor: AppTheme.black,
       body: Stack(
         children: [
+          if (_isGodlike)
+            const Positioned.fill(
+              child: IgnorePointer(child: RippleBurst()),
+            ),
+          if (_isGodlike)
+            const Positioned.fill(
+              child: IgnorePointer(child: ParticleExplosion()),
+            ),
+          if (_isGodlike)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(color: Colors.white.withOpacity(0.7))
+                    .animate()
+                    .fadeOut(duration: 350.ms),
+              ),
+            ),
+
           // Flash overlay
           AnimatedBuilder(
             animation: _flashAnimation,
@@ -237,7 +319,29 @@ class _RevealScreenState extends State<RevealScreen>
 
                       // Tier card
                       if (_showTier)
-                        PrecisionTierCard(tier: widget.result.tier),
+                        Builder(
+                          builder: (context) {
+                            Widget tierCard = PrecisionTierCard(
+                              tier: widget.result.tier,
+                              glitchOffset: _isBad ? _rgbSplitAnimation : null,
+                            );
+                            if (_isGodlike) {
+                              tierCard = ScaleTransition(
+                                scale: _godlikeScaleAnimation,
+                                child: tierCard,
+                              );
+                            }
+                            return tierCard;
+                          },
+                        ),
+
+                      if (_showTier) ...[
+                        const SizedBox(height: 16),
+                        TimingDial(
+                          playerTime: widget.result.actualTime,
+                          targetTime: widget.result.targetTime,
+                        ),
+                      ],
 
                       const SizedBox(height: 20),
 
@@ -305,6 +409,11 @@ class _RevealScreenState extends State<RevealScreen>
               ),
             ),
           ),
+
+          if (_isBad)
+            const Positioned.fill(
+              child: IgnorePointer(child: GlitchOverlay()),
+            ),
         ],
       ),
     );

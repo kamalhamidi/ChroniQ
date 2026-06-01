@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
+import '../models/game_result.dart';
 
 class AudioService {
   static AudioService? _instance;
@@ -135,6 +136,46 @@ class AudioService {
     await Future.delayed(const Duration(milliseconds: 250));
     final note3 = _generateTone(frequency: 784.0, durationMs: 400, volume: 0.6);
     await _resultPlayer.play(BytesSource(note3));
+  }
+
+  /// Tier-specific synthesized sound signatures
+  Future<void> playTierSound(PrecisionTier tier) async {
+    switch (tier) {
+      case PrecisionTier.godlike:
+        final notes = [523.25, 659.25, 783.99]; // C5 → E5 → G5
+        for (final freq in notes) {
+          final main = _generateTone(frequency: freq, durationMs: 80, volume: 0.5);
+          await _resultPlayer.play(BytesSource(main));
+          await Future.delayed(const Duration(milliseconds: 120));
+          final tail = _generateTone(frequency: freq, durationMs: 80, volume: 0.2);
+          await _resultPlayer.play(BytesSource(tail));
+          await Future.delayed(const Duration(milliseconds: 80));
+        }
+        break;
+
+      case PrecisionTier.great:
+      case PrecisionTier.good:
+      case PrecisionTier.perfect:
+        final tone = _generateTone(frequency: 440.0, durationMs: 150, volume: 0.45); // A4
+        await _resultPlayer.play(BytesSource(tone));
+        break;
+
+      case PrecisionTier.ok:
+        final tone = _generateTone(frequency: 392.0, durationMs: 200, volume: 0.4); // G4
+        await _resultPlayer.play(BytesSource(tone));
+        await Future.delayed(const Duration(milliseconds: 140));
+        final drop = _generateTone(frequency: 349.23, durationMs: 120, volume: 0.3); // F4
+        await _resultPlayer.play(BytesSource(drop));
+        break;
+
+      case PrecisionTier.bad:
+        final note1 = _generateTone(frequency: 164.81, durationMs: 200, volume: 0.6); // E3
+        await _resultPlayer.play(BytesSource(note1));
+        await Future.delayed(const Duration(milliseconds: 200));
+        final note2 = _generateTone(frequency: 130.81, durationMs: 200, volume: 0.6); // C3
+        await _resultPlayer.play(BytesSource(note2));
+        break;
+    }
   }
 
   /// Start heartbeat effect with adjustable speed

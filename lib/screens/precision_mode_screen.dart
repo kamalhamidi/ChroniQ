@@ -7,6 +7,7 @@ import '../services/storage_service.dart';
 import '../models/game_result.dart';
 import '../utils/precision_calculator.dart';
 import '../widgets/countdown_widget.dart';
+import '../widgets/arc_timer.dart';
 import 'reveal_screen.dart';
 
 enum _PrecisionPhase { showTarget, countdown, timing, done }
@@ -84,6 +85,7 @@ class _PrecisionModeScreenState extends State<PrecisionModeScreen>
     setState(() => _phase = _PrecisionPhase.timing);
     _stopwatch.reset();
     _stopwatch.start();
+    _elapsedSeconds = 0;
     _audio.startHeartbeat(speed: 0.5);
 
     // Monitor elapsed time for psychological pressure
@@ -92,7 +94,9 @@ class _PrecisionModeScreenState extends State<PrecisionModeScreen>
         timer.cancel();
         return;
       }
-      _elapsedSeconds = _stopwatch.elapsedMilliseconds / 1000.0;
+      setState(() {
+        _elapsedSeconds = _stopwatch.elapsedMilliseconds / 1000.0;
+      });
 
       // Increase heartbeat speed as approaching target
       final ratio = (_elapsedSeconds / _targetTime).clamp(0.0, 2.0);
@@ -261,14 +265,20 @@ class _PrecisionModeScreenState extends State<PrecisionModeScreen>
                   CountdownWidget(onComplete: _startTiming),
 
                 if (_phase == _PrecisionPhase.timing) ...[
+                  ArcTimer(
+                    elapsed: _elapsedSeconds,
+                    target: _targetTime,
+                    isRunning: _phase == _PrecisionPhase.timing,
+                  ),
+                  const SizedBox(height: 16),
                   Text(
-                    '${PrecisionCalculator.formatTime(_targetTime)}s',
+                    'TARGET ${PrecisionCalculator.formatTime(_targetTime)}s',
                     style: AppTheme.bodyLarge.copyWith(
                       color: AppTheme.dimWhite.withValues(alpha: 0.4),
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
                   // Tap button
                   GestureDetector(
                     onTap: _onTap,

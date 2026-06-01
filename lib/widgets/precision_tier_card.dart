@@ -5,11 +5,13 @@ import '../theme/app_theme.dart';
 class PrecisionTierCard extends StatefulWidget {
   final PrecisionTier tier;
   final bool animate;
+  final Animation<double>? glitchOffset;
 
   const PrecisionTierCard({
     super.key,
     required this.tier,
     this.animate = true,
+    this.glitchOffset,
   });
 
   @override
@@ -86,17 +88,52 @@ class _PrecisionTierCardState extends State<PrecisionTierCard>
                 style: const TextStyle(fontSize: 28),
               ),
               const SizedBox(width: 12),
-              Text(
-                widget.tier.displayName,
-                style: AppTheme.headingMedium.copyWith(
-                  color: widget.tier.color,
-                  letterSpacing: 3,
-                ),
-              ),
+              _buildTierLabel(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTierLabel() {
+    final baseStyle = AppTheme.headingMedium.copyWith(
+      color: widget.tier.color,
+      letterSpacing: 3,
+    );
+
+    if (widget.glitchOffset == null) {
+      return Text(widget.tier.displayName, style: baseStyle);
+    }
+
+    return AnimatedBuilder(
+      animation: widget.glitchOffset!,
+      builder: (context, _) {
+        final offset = widget.glitchOffset!.value;
+        return Stack(
+          children: [
+            Text(widget.tier.displayName, style: baseStyle),
+            Transform.translate(
+              offset: Offset(offset, 0),
+              child: Text(
+                widget.tier.displayName,
+                style: baseStyle.copyWith(
+                  color: const Color(0xFFFF3B3B).withOpacity(0.4),
+                ),
+              ),
+            ),
+            Transform.translate(
+              offset: Offset(-offset, 0),
+              child: Text(
+                widget.tier.displayName,
+                style: baseStyle.copyWith(
+                  color: const Color(0xFF3B6BFF).withOpacity(0.4),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
