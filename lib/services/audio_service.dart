@@ -108,6 +108,15 @@ class AudioService {
     await _countdownPlayer.play(BytesSource(tone));
   }
 
+  /// Rising tone warning 300ms before a beat target
+  Future<void> playBeatWarning() async {
+    final tone = _generateTone(frequency: 660.0, durationMs: 120, volume: 0.35);
+    await _countdownPlayer.play(BytesSource(tone));
+    await Future.delayed(const Duration(milliseconds: 80));
+    final rise = _generateTone(frequency: 880.0, durationMs: 120, volume: 0.4);
+    await _countdownPlayer.play(BytesSource(rise));
+  }
+
   /// GO sound: high pitched blip
   Future<void> playGo() async {
     final tone = _generateTone(frequency: 880.0, durationMs: 150, volume: 0.5);

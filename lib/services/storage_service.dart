@@ -29,6 +29,12 @@ class StorageService {
   static const _keyDailyLastDate = 'chrono_daily_last_date';
   static const _keyDailyResult = 'chrono_daily_result';
   static const _keyUnlockedAbilities = 'chrono_unlocked_abilities';
+  static const _keyStreakMultiplierHighScore = 'streak_multiplier_high_score';
+  static const _keyRhythmBestAvgMs = 'rhythm_best_avg_ms';
+  static const _keyBlindBestPrecision = 'blind_best_precision';
+  static const _keyGauntletHighScore = 'gauntlet_high_score';
+  static const _keyZonesBestPrecision = 'zones_best_precision';
+  static const _keyZonesTooltipSeen = 'zones_tooltip_seen';
 
   // ── First Launch ──
   bool get isFirstLaunch => _prefs.getBool(_keyFirstLaunch) ?? true;
@@ -148,6 +154,61 @@ class StorageService {
       abilities.add(ability);
       await _prefs.setString(_keyUnlockedAbilities, jsonEncode(abilities));
     }
+  }
+
+  // ── Streak Multiplier ──
+  int get streakMultiplierHighScore =>
+      _prefs.getInt(_keyStreakMultiplierHighScore) ?? 0;
+
+  Future<void> saveStreakMultiplierHighScore(int score) async {
+    if (score > streakMultiplierHighScore) {
+      await _prefs.setInt(_keyStreakMultiplierHighScore, score);
+    }
+  }
+
+  // ── Rhythm Challenge ──
+  double get rhythmBestScore =>
+      _prefs.getDouble(_keyRhythmBestAvgMs) ?? 999.0;
+
+  Future<void> saveRhythmBestScore(double avgMs) async {
+    if (avgMs < rhythmBestScore) {
+      await _prefs.setDouble(_keyRhythmBestAvgMs, avgMs);
+    }
+  }
+
+  // ── Blindfolded Mode ──
+  double get blindBestPrecision =>
+      _prefs.getDouble(_keyBlindBestPrecision) ?? 999.0;
+
+  Future<void> saveBlindBestPrecision(double diff) async {
+    if (diff < blindBestPrecision) {
+      await _prefs.setDouble(_keyBlindBestPrecision, diff);
+    }
+  }
+
+  // ── Reflex Gauntlet ──
+  int get gauntletHighScore => _prefs.getInt(_keyGauntletHighScore) ?? 0;
+
+  Future<void> saveGauntletHighScore(int hits) async {
+    if (hits > gauntletHighScore) {
+      await _prefs.setInt(_keyGauntletHighScore, hits);
+    }
+  }
+
+  // ── Target Zones ──
+  double get zonesBestPrecision =>
+      _prefs.getDouble(_keyZonesBestPrecision) ?? 999.0;
+
+  Future<void> saveZonesBestPrecision(double diff) async {
+    if (diff < zonesBestPrecision) {
+      await _prefs.setDouble(_keyZonesBestPrecision, diff);
+    }
+  }
+
+  bool get zonesTooltipSeen => _prefs.getBool(_keyZonesTooltipSeen) ?? false;
+
+  Future<void> setZonesTooltipSeen() async {
+    await _prefs.setBool(_keyZonesTooltipSeen, true);
   }
 
   Future<void> _checkAbilityUnlocks(Rank rank) async {
